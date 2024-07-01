@@ -15,11 +15,13 @@ import { useDeleteRecordFromCache } from '@/object-record/cache/hooks/useDeleteR
 import { useDeleteManyRecords } from '@/object-record/hooks/useDeleteManyRecords';
 import { useDeleteOneRecord } from '@/object-record/hooks/useDeleteOneRecord';
 import { viewableRecordIdState } from '@/object-record/record-right-drawer/states/viewableRecordIdState';
+import { confirmationModalState } from '@/object-record/record-right-drawer/states/confirmationModalState';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { mapToRecordId } from '@/object-record/utils/mapToObjectId';
 import { IconButton } from '@/ui/input/button/components/IconButton';
 import { isRightDrawerOpenState } from '@/ui/layout/right-drawer/states/isRightDrawerOpenState';
 import { isDefined } from '~/utils/isDefined';
+import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 
 const StyledButtonContainer = styled.div`
   display: inline-flex;
@@ -56,8 +58,14 @@ export const ActivityActionBar = () => {
     isUpsertingActivityInDBState,
   );
 
+  const [isConfirmationModalOpen, setConfirmationModal] = useRecoilState(confirmationModalState)
+
   const { refreshShowPageFindManyActivitiesQueries } =
     useRefreshShowPageFindManyActivitiesQueries();
+
+  const openConfirmationModal = () => {
+      setConfirmationModal(true);
+    };
 
   const deleteActivity = useRecoilCallback(
     ({ snapshot }) =>
@@ -120,14 +128,25 @@ export const ActivityActionBar = () => {
   const actionsAreDisabled = isUpsertingActivityInDB;
 
   return (
+    <div>
     <StyledButtonContainer>
       <IconButton
         Icon={IconTrash}
-        onClick={deleteActivity}
+        onClick={openConfirmationModal}
         size="medium"
         variant="secondary"
         disabled={actionsAreDisabled}
       />
     </StyledButtonContainer>
+    <ConfirmationModal 
+        isOpen={isConfirmationModalOpen}
+        title="Confirm Deletion"
+        subtitle="Are you sure you want to delete this activity?"
+        setIsOpen={setConfirmationModal}
+        onConfirmClick={deleteActivity}
+        deleteButtonText="Delete"
+        confirmButtonAccent="danger"
+      />
+    </div>
   );
 };

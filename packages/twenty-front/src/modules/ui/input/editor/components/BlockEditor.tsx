@@ -1,15 +1,17 @@
+import { useEffect } from 'react';
 import { ClipboardEvent } from 'react';
-import { filterSuggestionItems } from '@blocknote/core';
-import { BlockNoteView, SuggestionMenuController } from '@blocknote/react';
+import { BlockColorsItem, DragHandleMenu, SideMenu, SuggestionMenuController, RemoveBlockItem } from '@blocknote/react';
+import { BlockNoteView } from "@blocknote/mantine";
+import "@blocknote/mantine/style.css";
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
-
+import { SideMenuController } from '@blocknote/react';
 import { blockSchema } from '@/activities/blocks/schema';
-import { getSlashMenu } from '@/activities/blocks/slashMenu';
-import {
-  CustomSlashMenu,
-  SuggestionItem,
-} from '@/ui/input/editor/components/CustomSlashMenu';
+import { ResetBlockTypeItem } from '@/ui/input/editor/components/ResetBlockTypeItem';
+import { blockConfirmationModalState } from '@/object-record/record-right-drawer/states/blockConfirmationModalState';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { ConfirmationModal } from '@/ui/layout/modal/components/BlockEditorConfirmationModal';
+import { selectedBlocksState } from '@/object-record/record-right-drawer/states/selectedBlocksState';
 
 interface BlockEditorProps {
   editor: typeof blockSchema.BlockNoteEditor;
@@ -68,6 +70,18 @@ export const BlockEditor = ({
     onPaste?.(event);
   };
 
+  const [isConfirmationModalOpen, setConfirmationModal] = useRecoilState(blockConfirmationModalState)
+  const selectedBlocksValue = useRecoilValue(selectedBlocksState)
+  useEffect(() => {
+}, [isConfirmationModalOpen]);
+
+const handleConfirm = () => {
+  if(selectedBlocksValue.block) {
+    editor.removeBlocks([selectedBlocksValue.block]);
+  }
+  setConfirmationModal(false); // Close the modal after confirming
+};
+
   return (
     <StyledEditor>
       <BlockNoteView
@@ -78,14 +92,32 @@ export const BlockEditor = ({
         editor={editor}
         theme={blockNoteTheme}
         slashMenu={false}
+        sideMenu={false}
       >
-        <SuggestionMenuController
-          triggerCharacter={'/'}
-          getItems={async (query) =>
-            filterSuggestionItems<SuggestionItem>(getSlashMenu(editor), query)
-          }
-          suggestionMenuComponent={CustomSlashMenu}
-        />
+      <SideMenuController
+        sideMenu={(props) => (
+          <SideMenu
+            {...props}
+            dragHandleMenu={(props) => (
+              <DragHandleMenu {...props}>
+                <RemoveBlockItem {...props}>Delete</RemoveBlockItem>
+                <BlockColorsItem {...props}>Colors</BlockColorsItem>
+                {/* Item which resets the hovered block's type. */}
+                <ResetBlockTypeItem {...props}>Reset Type</ResetBlockTypeItem>
+              </DragHandleMenu>
+            )}
+          />
+        )}
+      />
+      <ConfirmationModal 
+        isOpen={isConfirmationModalOpen}
+        title="Confirm Deletion"
+        subtitle="Are you sure you want to delete this activity?"
+        setIsOpen={setConfirmationModal}
+        onConfirmClick={handleConfirm}
+        deleteButtonText="Delete"
+        confirmButtonAccent="danger"
+      />
       </BlockNoteView>
     </StyledEditor>
   );
