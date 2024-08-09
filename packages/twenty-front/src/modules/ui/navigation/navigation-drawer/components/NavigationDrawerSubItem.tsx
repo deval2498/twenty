@@ -4,8 +4,13 @@ import {
 } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import styled from '@emotion/styled';
 
-const StyledItem = styled.div`
-  margin-left: ${({ theme }) => theme.spacing(4)};
+type StyledItemProps = {
+  isChild: boolean;
+};
+
+const StyledItem = styled.div<StyledItemProps>`
+  margin-left: ${({ theme, isChild }) =>
+    isChild ? theme.spacing(0) : theme.spacing(4)};
 `;
 
 type NavigationDrawerSubItemProps = NavigationDrawerItemProps;
@@ -22,9 +27,11 @@ export const NavigationDrawerSubItem = ({
   soon,
   count,
   keyboard,
+  activeChildIndex,
+  isChild = false,
 }: NavigationDrawerSubItemProps) => {
   return (
-    <StyledItem>
+    <StyledItem isChild={isChild}>
       <NavigationDrawerItem
         className={className}
         label={label}
@@ -37,6 +44,8 @@ export const NavigationDrawerSubItem = ({
         soon={soon}
         count={count}
         keyboard={keyboard}
+        activeChildIndex={activeChildIndex}
+        isChild={isChild}
       />
     </StyledItem>
   );

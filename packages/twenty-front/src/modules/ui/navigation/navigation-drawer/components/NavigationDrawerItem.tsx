@@ -1,14 +1,12 @@
+import { isNavigationDrawerOpenState } from '@/ui/navigation/states/isNavigationDrawerOpenState';
+import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import isPropValid from '@emotion/is-prop-valid';
 import { useTheme } from '@emotion/react';
 import styled from '@emotion/styled';
 import { isNonEmptyString } from '@sniptt/guards';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { IconComponent, MOBILE_VIEWPORT, Pill } from 'twenty-ui';
-
-import { isNavigationDrawerOpenState } from '@/ui/navigation/states/isNavigationDrawerOpenState';
-import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
-import { isDefined } from '~/utils/isDefined';
+import { IconComponent, isDefined, MOBILE_VIEWPORT, Pill } from 'twenty-ui';
 
 export type NavigationDrawerItemProps = {
   className?: string;
@@ -22,6 +20,10 @@ export type NavigationDrawerItemProps = {
   soon?: boolean;
   count?: number;
   keyboard?: string[];
+  childItemsCount?: number;
+  activeChild?: number;
+  activeChildIndex?: number;
+  isChild?: boolean;
 };
 
 type StyledItemProps = {
@@ -30,11 +32,25 @@ type StyledItemProps = {
   level: 1 | 2;
   soon?: boolean;
   to?: string;
+  childItemsCount: number;
+  childActiveIndex: number;
+  isChild: boolean;
+};
+
+type StyledIconProps = {
+  level: 1 | 2;
 };
 
 const StyledItem = styled('div', {
   shouldForwardProp: (prop) =>
-    !['active', 'danger', 'soon'].includes(prop) && isPropValid(prop),
+    ![
+      'active',
+      'danger',
+      'soon',
+      'childItemsCount',
+      'childActiveIndex',
+      'isChild',
+    ].includes(prop) && isPropValid(prop),
 })<StyledItemProps>`
   align-items: center;
   background: ${(props) =>
@@ -60,7 +76,8 @@ const StyledItem = styled('div', {
   font-family: 'Inter';
   font-size: ${({ theme }) => theme.font.size.md};
   gap: ${({ theme }) => theme.spacing(2)};
-  margin-left: ${({ level, theme }) => theme.spacing((level - 1) * 4)};
+  margin-left: ${({ level, theme, isChild }) =>
+    isChild ? theme.spacing(0) : theme.spacing((level - 1) * 4)};
   padding-bottom: ${({ theme }) => theme.spacing(1)};
   padding-left: ${({ theme }) => theme.spacing(1)};
   padding-right: ${({ theme }) => theme.spacing(1)};
@@ -82,6 +99,58 @@ const StyledItem = styled('div', {
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     font-size: ${({ theme }) => theme.font.size.lg};
   }
+
+  position: relative; // Needed for the pseudo-element positioning
+
+  ${({ isChild, theme, active }) =>
+    isChild &&
+    `
+      &.show-before::before {
+        content: '';
+        position: absolute;
+        top: 7px; // Middle of the container
+        left: 12px; // Adjust based on your needs
+        width: 8px; // Length of the horizontal line
+        height: 15.17px; // Height to create the curve
+        border: solid ${
+          active ? theme.grayScale.gray40 : theme.grayScale.gray25
+        };
+        border-width: 0 0px 1px 1px; // Right and bottom borders to create a curve
+        border-radius: 0 0 0 4px; // Curve at the bottom left corner
+        transform: translateY(-50%); // Center the line vertically
+        z-index: ${active ? 1 : 0};
+      }
+  `}
+
+  ::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* Position at the bottom of the container */
+    left: 12px; /* Adjust based on your needs */
+    width: 1px; /* Line width */
+    height: ${({ active, childItemsCount }) =>
+      active && childItemsCount > 1
+        ? `${(childItemsCount - 1) * 28 + 6}px`
+        : '0'}; /* Adjust the multiplier as needed */
+    background: ${({ theme, active, childItemsCount, childActiveIndex }) =>
+      active && childItemsCount > 1
+        ? `linear-gradient(to bottom, ${theme.grayScale.gray40} ${
+            (childActiveIndex - 1) * 28
+          }px, ${theme.grayScale.gray40} ${
+            (childActiveIndex - 1) * 28 + 6
+          }px, ${theme.grayScale.gray25} ${(childActiveIndex - 1) * 28}px, ${
+            theme.grayScale.gray25
+          } 100%)`
+        : theme.grayScale.gray40}; /* Line color change */
+    z-index: 1;
+  }
+`;
+
+const StyledIcon = styled.div<StyledIconProps>`
+  margin-left: ${({ theme, level }) =>
+    level > 1 ? theme.spacing(5) : theme.spacing(0)};
+  display: flex;
+  align-items: center;
 `;
 
 const StyledItemLabel = styled.div`
@@ -129,6 +198,9 @@ export const NavigationDrawerItem = ({
   soon,
   count,
   keyboard,
+  childItemsCount = 0,
+  activeChildIndex = 0,
+  isChild = false,
 }: NavigationDrawerItemProps) => {
   const theme = useTheme();
   const isMobile = useIsMobile();
@@ -152,7 +224,7 @@ export const NavigationDrawerItem = ({
 
   return (
     <StyledItem
-      className={className}
+      className={`${className} ${level > 1 ? 'show-before' : ''}`}
       level={level}
       onClick={handleItemClick}
       active={active}
@@ -161,8 +233,15 @@ export const NavigationDrawerItem = ({
       soon={soon}
       as={to ? Link : 'div'}
       to={to ? to : undefined}
+      childItemsCount={childItemsCount || 0}
+      childActiveIndex={activeChildIndex + 1}
+      isChild={isChild}
     >
-      {Icon && <Icon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />}
+      {Icon && (
+        <StyledIcon level={level}>
+          <Icon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+        </StyledIcon>
+      )}
       <StyledItemLabel>{label}</StyledItemLabel>
       {soon && <Pill label="Soon" />}
       {!!count && <StyledItemCount>{count}</StyledItemCount>}

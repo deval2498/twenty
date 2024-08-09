@@ -178,6 +178,7 @@ export class CreateCompanyService {
     transactionManager?: EntityManager,
   ): Promise<number> {
     const lastCompanyPosition = await companyRepository.maximum(
+      //@ts-expect-error Testing
       'position',
       undefined,
       transactionManager,

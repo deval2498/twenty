@@ -97,6 +97,7 @@ export class CreateContactService {
     transactionManager?: EntityManager,
   ): Promise<number> {
     const lastPersonPosition = await personRepository.maximum(
+      //@ts-expect-error Testing
       'position',
       undefined,
       transactionManager,
